@@ -10,6 +10,11 @@
     <AssemblyName>GodHandTrainer</AssemblyName>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <Platforms>AnyCPU;x64</Platforms>
+    <Authors>AFreoN</Authors>
+    <Company>AFreoN</Company>
+    <Product>God Hand Trainer</Product>
+    <Copyright>Copyright (c) AFreoN</Copyright>
+    <Version>1.0.1</Version>
   </PropertyGroup>
 
 </Project>
