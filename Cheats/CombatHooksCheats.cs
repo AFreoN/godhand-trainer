@@ -13,6 +13,8 @@ public sealed class CombatHooksCheats
     private const string OneHitKillId = "OneHitKill";
     private const string UnBlockerId = "UnBlocker";
     private const string NoDamageId = "NoDamage";
+    private const string WallsXId = "WalkThroughWallsX";
+    private const string WallsZId = "WalkThroughWallsZ";
 
     private readonly MemoryManager _memory;
     private readonly AOBScanner _scanner;
@@ -34,6 +36,7 @@ public sealed class CombatHooksCheats
     public bool OneHitKillInstalled => _injection.IsInstalled(OneHitKillId);
     public bool UnBlockerInstalled => _injection.IsInstalled(UnBlockerId);
     public bool NoDamageInstalled => _injection.IsInstalled(NoDamageId);
+    public bool WalkThroughWallsInstalled => _injection.IsInstalled(WallsXId) && _injection.IsInstalled(WallsZId);
     public int CurrentMoveEffect => _currentMoveEffect;
 
     public bool InstallHitBox()
@@ -176,6 +179,67 @@ public sealed class CombatHooksCheats
     }
 
     public void UninstallNoDamage() => _injection.Uninstall(NoDamageId);
+
+    public bool InstallWalkThroughWalls()
+    {
+        if (WalkThroughWallsInstalled) return true;
+        if (!_memory.IsAttached) return false;
+
+        var ok1 = InstallWallsAxis(WallsXId, Patterns.WalkThroughWallsXSign, Patterns.WalkThroughWallsXPatchSize);
+        if (!ok1) return false;
+        var ok2 = InstallWallsAxis(WallsZId, Patterns.WalkThroughWallsZSign, Patterns.WalkThroughWallsZPatchSize);
+        if (!ok2)
+        {
+            _injection.Uninstall(WallsXId);
+            return false;
+        }
+        return true;
+    }
+
+    public void UninstallWalkThroughWalls()
+    {
+        _injection.Uninstall(WallsXId);
+        _injection.Uninstall(WallsZId);
+    }
+
+    private bool InstallWallsAxis(string id, string aob, int patchSize)
+    {
+        var min = (IntPtr)Patterns.TimeScaleScanRangeMin;
+        var max = (IntPtr)Patterns.TimeScaleScanRangeMax;
+        var hookSite = _scanner.ScanProcess(aob, min, max);
+        if (hookSite == IntPtr.Zero) return false;
+
+        var captured = new byte[patchSize];
+        if (!_memory.ReadBytes(hookSite, captured)) return false;
+
+        return _injection.Install(
+            id,
+            hookSite,
+            patchSize,
+            (trampolineAddr, _) => BuildWalkThroughWallsTrampoline(hookSite, trampolineAddr, patchSize, captured),
+            out _,
+            out _);
+    }
+
+    private static byte[] BuildWalkThroughWallsTrampoline(IntPtr hookSite, IntPtr trampoline, int patchSize, byte[] captured)
+    {
+        var buf = new List<byte>(24);
+
+        // mov edx, dword ptr [ecx]   — 8B 11
+        // Reads the current position so the captured "mov [ecx], edx" writes the same value back,
+        // neutralizing the collision-axis update.
+        buf.Add(0x8B);
+        buf.Add(0x11);
+
+        buf.AddRange(captured);
+
+        var returnTarget = IntPtr.Add(hookSite, patchSize);
+        var jmpFromVa = IntPtr.Add(trampoline, buf.Count);
+        var rel = (int)((long)returnTarget - ((long)jmpFromVa + 5));
+        buf.Add(0xE9);
+        buf.AddRange(BitConverter.GetBytes(rel));
+        return buf.ToArray();
+    }
 
     private void FreeMoveEffectIfUnused()
     {

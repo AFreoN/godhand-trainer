@@ -63,7 +63,7 @@ public sealed class PlayerCheats
         var success = true;
         success &= _memory.WriteInt32(Offsets.UnlimitedKeys1, Offsets.UnlimitedKeysValue);
         success &= _memory.WriteInt32(Offsets.UnlimitedKeys2, Offsets.UnlimitedKeysValue);
-        success &= _memory.WriteInt32(Offsets.UnlimitedKeys3, Offsets.UnlimitedKeysValue);
+        success &= _memory.WriteInt32(Offsets.UnlimitedKeys3, Offsets.UnlimitedKeys3Value);
         return success;
     }
 }

@@ -39,6 +39,7 @@ public sealed class MainForm : Form
     private readonly List<ComboBox> _combatCombos = new();
     private readonly List<CheckBox> _combatFreezes = new();
     private readonly List<CombatSlot> _combatSlots = new();
+    private readonly List<Button> _combatPresetButtons = new();
     private CancellationTokenSource? _combatSyncCts;
 
     private CheckBox _hitboxToggle = null!;
@@ -48,6 +49,7 @@ public sealed class MainForm : Form
     private CheckBox _oneHitKillToggle = null!;
     private CheckBox _guardBreakerToggle = null!;
     private CheckBox _noDamageToggle = null!;
+    private CheckBox _walkThroughWallsToggle = null!;
 
     private CollapsibleSection _moveDamageSection = null!;
     private readonly Dictionary<uint, NumericUpDown> _damageInputs = new();
@@ -114,10 +116,10 @@ public sealed class MainForm : Form
 
         var combat = BuildCombatGroup();
         combat.Location = new Point(rightX, topY + 178);
-        combat.Size = new Size(colW, 365);
+        combat.Size = new Size(colW, 405);
         Controls.Add(combat);
 
-        var movesDamageY = topY + 544 + 10;
+        var movesDamageY = topY + 584 + 10;
         _moveDamageSection = BuildMoveDamageSection();
         _moveDamageSection.Location = new Point(leftX, movesDamageY);
         _moveDamageSection.Width = 1076;
@@ -175,28 +177,23 @@ public sealed class MainForm : Form
         };
         box.Controls.Add(goldLabel);
 
-        _goldInput = new NumericUpDown
+        _goldInput = new DarkNumericUpDown
         {
-            Location = new Point(60, 25),
-            Size = new Size(120, 23),
+            Location = new Point(60, 24),
+            Size = new Size(120, 30),
             Minimum = 0,
             Maximum = 999_999,
             Value = 99_999,
-            BackColor = Color.FromArgb(48, 48, 54),
-            ForeColor = Color.Gainsboro,
         };
         box.Controls.Add(_goldInput);
 
-        _goldApply = new Button
+        _goldApply = new DarkButton
         {
             Text = "Apply",
             Location = new Point(190, 24),
-            Size = new Size(80, 25),
-            FlatStyle = FlatStyle.Flat,
-            BackColor = Color.FromArgb(60, 90, 140),
-            ForeColor = Color.White,
+            Size = new Size(80, 30),
+            Style = DarkButtonStyle.Primary,
         };
-        _goldApply.FlatAppearance.BorderSize = 0;
         _goldApply.Click += async (_, _) => await ApplyGoldAsync();
         box.Controls.Add(_goldApply);
 
@@ -226,28 +223,23 @@ public sealed class MainForm : Form
         };
         box.Controls.Add(ghmLabel);
 
-        _godHandMeterInput = new NumericUpDown
+        _godHandMeterInput = new DarkNumericUpDown
         {
-            Location = new Point(110, 93),
-            Size = new Size(80, 23),
+            Location = new Point(110, 90),
+            Size = new Size(80, 30),
             Minimum = Offsets.GodHandMeterMin,
             Maximum = Offsets.GodHandMeterMax,
             Value = 0,
-            BackColor = Color.FromArgb(48, 48, 54),
-            ForeColor = Color.Gainsboro,
         };
         box.Controls.Add(_godHandMeterInput);
 
-        _godHandMeterApply = new Button
+        _godHandMeterApply = new DarkButton
         {
             Text = "Apply",
-            Location = new Point(196, 92),
-            Size = new Size(60, 25),
-            FlatStyle = FlatStyle.Flat,
-            BackColor = Color.FromArgb(60, 90, 140),
-            ForeColor = Color.White,
+            Location = new Point(196, 90),
+            Size = new Size(60, 30),
+            Style = DarkButtonStyle.Primary,
         };
-        _godHandMeterApply.FlatAppearance.BorderSize = 0;
         _godHandMeterApply.Click += async (_, _) =>
         {
             var v = (int)_godHandMeterInput.Value;
@@ -332,29 +324,23 @@ public sealed class MainForm : Form
     {
         var box = NewGroup("Unlocks");
 
-        _movesUnlockButton = new Button
+        _movesUnlockButton = new DarkButton
         {
             Text = "Unlock All Moves",
             Location = new Point(14, 30),
-            Size = new Size(220, 32),
-            FlatStyle = FlatStyle.Flat,
-            BackColor = Color.FromArgb(60, 120, 90),
-            ForeColor = Color.White,
+            Size = new Size(220, 34),
+            Style = DarkButtonStyle.Success,
         };
-        _movesUnlockButton.FlatAppearance.BorderSize = 0;
         _movesUnlockButton.Click += async (_, _) => await Task.Run(() => _trainer.Unlocks.UnlockAllMoves());
         box.Controls.Add(_movesUnlockButton);
 
-        _rouletteUnlockButton = new Button
+        _rouletteUnlockButton = new DarkButton
         {
             Text = "Unlock All Roulettes",
             Location = new Point(244, 30),
-            Size = new Size(220, 32),
-            FlatStyle = FlatStyle.Flat,
-            BackColor = Color.FromArgb(140, 100, 60),
-            ForeColor = Color.White,
+            Size = new Size(220, 34),
+            Style = DarkButtonStyle.Warning,
         };
-        _rouletteUnlockButton.FlatAppearance.BorderSize = 0;
         _rouletteUnlockButton.Click += async (_, _) => await Task.Run(() => _trainer.Unlocks.UnlockAllRoulettes());
         box.Controls.Add(_rouletteUnlockButton);
 
@@ -367,14 +353,10 @@ public sealed class MainForm : Form
         };
         box.Controls.Add(dghLabel);
 
-        _doubleGodHandCombo = new ComboBox
+        _doubleGodHandCombo = new DarkComboBox
         {
-            Location = new Point(140, 77),
-            Size = new Size(180, 23),
-            DropDownStyle = ComboBoxStyle.DropDownList,
-            BackColor = Color.FromArgb(48, 48, 54),
-            ForeColor = Color.Gainsboro,
-            FlatStyle = FlatStyle.Flat,
+            Location = new Point(140, 74),
+            Size = new Size(180, 30),
         };
         _doubleGodHandCombo.Items.AddRange(new object[] { "Default", "Karate Double", "Devil Double" });
         _doubleGodHandCombo.SelectedIndex = 0;
@@ -411,28 +393,23 @@ public sealed class MainForm : Form
         };
         box.Controls.Add(slotsLabel);
 
-        _rouletteSlotsInput = new NumericUpDown
+        _rouletteSlotsInput = new DarkNumericUpDown
         {
-            Location = new Point(140, 119),
-            Size = new Size(60, 23),
+            Location = new Point(140, 116),
+            Size = new Size(60, 30),
             Minimum = Offsets.RouletteSlotsMin,
             Maximum = Offsets.RouletteSlotsMax,
             Value = 6,
-            BackColor = Color.FromArgb(48, 48, 54),
-            ForeColor = Color.Gainsboro,
         };
         box.Controls.Add(_rouletteSlotsInput);
 
-        _rouletteSlotsApply = new Button
+        _rouletteSlotsApply = new DarkButton
         {
             Text = "Apply",
-            Location = new Point(210, 118),
-            Size = new Size(80, 25),
-            FlatStyle = FlatStyle.Flat,
-            BackColor = Color.FromArgb(60, 90, 140),
-            ForeColor = Color.White,
+            Location = new Point(210, 116),
+            Size = new Size(80, 30),
+            Style = DarkButtonStyle.Primary,
         };
-        _rouletteSlotsApply.FlatAppearance.BorderSize = 0;
         _rouletteSlotsApply.Click += async (_, _) =>
         {
             var v = (byte)_rouletteSlotsInput.Value;
@@ -484,28 +461,23 @@ public sealed class MainForm : Form
         };
         box.Controls.Add(lvlLabel);
 
-        _levelMeterInput = new NumericUpDown
+        _levelMeterInput = new DarkNumericUpDown
         {
-            Location = new Point(110, 25),
-            Size = new Size(80, 23),
+            Location = new Point(110, 22),
+            Size = new Size(80, 30),
             Minimum = Offsets.LevelMeterMin,
             Maximum = Offsets.LevelMeterMax,
             Value = 0,
-            BackColor = Color.FromArgb(48, 48, 54),
-            ForeColor = Color.Gainsboro,
         };
         box.Controls.Add(_levelMeterInput);
 
-        _levelMeterApply = new Button
+        _levelMeterApply = new DarkButton
         {
             Text = "Apply",
-            Location = new Point(196, 24),
-            Size = new Size(60, 25),
-            FlatStyle = FlatStyle.Flat,
-            BackColor = Color.FromArgb(60, 90, 140),
-            ForeColor = Color.White,
+            Location = new Point(196, 22),
+            Size = new Size(60, 30),
+            Style = DarkButtonStyle.Primary,
         };
-        _levelMeterApply.FlatAppearance.BorderSize = 0;
         _levelMeterApply.Click += async (_, _) =>
         {
             var v = (int)_levelMeterInput.Value;
@@ -544,6 +516,23 @@ public sealed class MainForm : Form
         };
         box.Controls.Add(_unlimitedKeysToggle);
 
+        _walkThroughWallsToggle = new DarkCheckBox
+        {
+            Text = "Walk Through Walls",
+            Location = new Point(14, 92),
+            AutoSize = true,
+            ForeColor = Color.Gainsboro,
+        };
+        _walkThroughWallsToggle.CheckedChanged += async (_, _) =>
+        {
+            if (_suppressEvents) return;
+            await ToggleHookAsync(_walkThroughWallsToggle,
+                () => _trainer.CombatHooks.InstallWalkThroughWalls(),
+                () => { _trainer.CombatHooks.UninstallWalkThroughWalls(); return true; },
+                "Walk Through Walls");
+        };
+        box.Controls.Add(_walkThroughWallsToggle);
+
         return box;
     }
 
@@ -562,7 +551,7 @@ public sealed class MainForm : Form
 
         _hitboxToggle = new DarkCheckBox
         {
-            Text = "Hitbox (extended hit window)",
+            Text = "Hitbox Large",
             AutoSize = true,
             Location = new Point(14, 28),
             ForeColor = Color.Gainsboro,
@@ -668,14 +657,10 @@ public sealed class MainForm : Form
         };
         box.Controls.Add(_damageTypeToggle);
 
-        _moveEffectCombo = new ComboBox
+        _moveEffectCombo = new DarkComboBox
         {
-            Location = new Point(140, 113),
-            Size = new Size(330, 23),
-            DropDownStyle = ComboBoxStyle.DropDownList,
-            BackColor = Color.FromArgb(48, 48, 54),
-            ForeColor = Color.Gainsboro,
-            FlatStyle = FlatStyle.Flat,
+            Location = new Point(140, 110),
+            Size = new Size(330, 30),
             DropDownHeight = 200,
         };
         _moveEffectCombo.Items.AddRange(MoveEffectCatalog.Effects.Cast<object>().ToArray());
@@ -695,6 +680,8 @@ public sealed class MainForm : Form
     private async Task ToggleHookAsync(CheckBox toggle, Func<bool> install, Func<bool> uninstall, string name)
     {
         toggle.Enabled = false;
+        var pulsing = toggle as DarkCheckBox;
+        pulsing?.BeginPulse();
         try
         {
             if (toggle.Checked)
@@ -717,6 +704,7 @@ public sealed class MainForm : Form
         }
         finally
         {
+            pulsing?.EndPulse();
             toggle.Enabled = true;
         }
     }
@@ -727,7 +715,26 @@ public sealed class MainForm : Form
 
         var moveItems = MoveCatalog.Moves.Cast<object>().ToArray();
 
-        var y = 28;
+        const int presetCount = 4;
+        const int presetBtnWidth = 110;
+        const int presetBtnGap = 8;
+        var presetRowY = 28;
+        for (var i = 0; i < presetCount; i++)
+        {
+            var index = i;
+            var btn = new DarkButton
+            {
+                Text = $"Preset {index + 1}",
+                Location = new Point(14 + i * (presetBtnWidth + presetBtnGap), presetRowY),
+                Size = new Size(presetBtnWidth, 30),
+                Style = DarkButtonStyle.Primary,
+            };
+            btn.Click += async (_, _) => await ApplyCombatPresetAsync(index);
+            box.Controls.Add(btn);
+            _combatPresetButtons.Add(btn);
+        }
+
+        var y = presetRowY + 38;
         foreach (var slot in MoveCatalog.Slots)
         {
             var label = new Label
@@ -741,14 +748,10 @@ public sealed class MainForm : Form
             };
             box.Controls.Add(label);
 
-            var combo = new ComboBox
+            var combo = new DarkComboBox
             {
                 Location = new Point(140, y),
-                Size = new Size(300, 23),
-                DropDownStyle = ComboBoxStyle.DropDownList,
-                BackColor = Color.FromArgb(48, 48, 54),
-                ForeColor = Color.Gainsboro,
-                FlatStyle = FlatStyle.Flat,
+                Size = new Size(300, 30),
                 Tag = slot,
                 IntegralHeight = false,
                 DropDownHeight = 320,
@@ -798,6 +801,104 @@ public sealed class MainForm : Form
         }
 
         return box;
+    }
+
+    private static readonly IReadOnlyDictionary<uint, int> CombatPreset1 = new Dictionary<uint, int>
+    {
+        [Offsets.MoveTriangle]     = 99,
+        [Offsets.MoveDownTriangle] = 77,
+        [Offsets.MoveCross]        = 101,
+        [Offsets.MoveDownCross]    = 57,
+        [Offsets.MoveDownSquare]   = 98,
+        [Offsets.MoveSquare1]      = 95,
+        [Offsets.MoveSquare2]      = 94,
+        [Offsets.MoveSquare3]      = 96,
+        [Offsets.MoveSquare4]      = 97,
+    };
+
+    private static readonly IReadOnlyDictionary<uint, int> CombatPreset2 = new Dictionary<uint, int>
+    {
+        [Offsets.MoveTriangle]     = 99,
+        [Offsets.MoveDownTriangle] = 77,
+        [Offsets.MoveCross]        = 101,
+        [Offsets.MoveDownCross]    = 57,
+        [Offsets.MoveDownSquare]   = 98,
+        [Offsets.MoveSquare1]      = 95,
+        [Offsets.MoveSquare2]      = 94,
+        [Offsets.MoveSquare3]      = 96,
+        [Offsets.MoveSquare4]      = 97,
+    };
+
+    private static readonly IReadOnlyDictionary<uint, int> CombatPreset3 = new Dictionary<uint, int>
+    {
+        [Offsets.MoveTriangle]     = 99,
+        [Offsets.MoveDownTriangle] = 77,
+        [Offsets.MoveCross]        = 101,
+        [Offsets.MoveDownCross]    = 57,
+        [Offsets.MoveDownSquare]   = 98,
+        [Offsets.MoveSquare1]      = 95,
+        [Offsets.MoveSquare2]      = 94,
+        [Offsets.MoveSquare3]      = 96,
+        [Offsets.MoveSquare4]      = 97,
+    };
+
+    private static readonly IReadOnlyDictionary<uint, int> CombatPreset4 = new Dictionary<uint, int>
+    {
+        [Offsets.MoveTriangle]     = 99,
+        [Offsets.MoveDownTriangle] = 77,
+        [Offsets.MoveCross]        = 101,
+        [Offsets.MoveDownCross]    = 57,
+        [Offsets.MoveDownSquare]   = 98,
+        [Offsets.MoveSquare1]      = 95,
+        [Offsets.MoveSquare2]      = 94,
+        [Offsets.MoveSquare3]      = 96,
+        [Offsets.MoveSquare4]      = 97,
+    };
+
+    private static IReadOnlyDictionary<uint, int> GetCombatPreset(int index) => index switch
+    {
+        0 => CombatPreset1,
+        1 => CombatPreset2,
+        2 => CombatPreset3,
+        3 => CombatPreset4,
+        _ => CombatPreset1,
+    };
+
+    private async Task ApplyCombatPresetAsync(int index)
+    {
+        if (!_trainer.Memory.IsAttached) return;
+        var preset = GetCombatPreset(index);
+        var movesById = MoveCatalog.Moves.ToDictionary(m => m.Id);
+
+        await Task.Run(() =>
+        {
+            foreach (var (addr, moveId) in preset)
+                _trainer.Combat.SetSlotMove(addr, moveId);
+        });
+
+        _suppressEvents = true;
+        try
+        {
+            for (var i = 0; i < _combatSlots.Count; i++)
+            {
+                if (!preset.TryGetValue(_combatSlots[i].Address, out var moveId)) continue;
+                if (!movesById.TryGetValue(moveId, out var move)) continue;
+                _combatCombos[i].SelectedItem = move;
+            }
+        }
+        finally
+        {
+            _suppressEvents = false;
+        }
+
+        for (var i = 0; i < _combatSlots.Count; i++)
+        {
+            if (!preset.TryGetValue(_combatSlots[i].Address, out var moveId)) continue;
+            if (!_combatFreezes[i].Checked) continue;
+            var addr = _combatSlots[i].Address;
+            var freezeId = $"CombatSlot:{addr:X8}";
+            _trainer.Freeze.Set(freezeId, () => _trainer.Combat.SetSlotMove(addr, moveId));
+        }
     }
 
     private CollapsibleSection BuildMoveDamageSection()
@@ -851,31 +952,26 @@ public sealed class MainForm : Form
             };
             content.Controls.Add(nameLabel);
 
-            var input = new NumericUpDown
+            var input = new DarkNumericUpDown
             {
-                Location = new Point(x + 188, y),
-                Size = new Size(80, 23),
+                Location = new Point(x + 188, y - 3),
+                Size = new Size(80, 30),
                 Minimum = 0,
                 Maximum = 999_999,
                 Value = 100,
-                BackColor = Color.FromArgb(48, 48, 54),
-                ForeColor = Color.Gainsboro,
                 Tag = entry,
             };
             content.Controls.Add(input);
             _damageInputs[entry.Address] = input;
 
-            var apply = new Button
+            var apply = new DarkButton
             {
                 Text = "Apply",
-                Location = new Point(x + 272, y - 1),
-                Size = new Size(56, 25),
-                FlatStyle = FlatStyle.Flat,
-                BackColor = Color.FromArgb(60, 90, 140),
-                ForeColor = Color.White,
+                Location = new Point(x + 272, y - 3),
+                Size = new Size(56, 28),
+                Style = DarkButtonStyle.Primary,
                 Tag = entry,
             };
-            apply.FlatAppearance.BorderSize = 0;
             apply.Click += async (s, _) =>
             {
                 if (s is not Button b || b.Tag is not MoveDamageEntry e) return;
@@ -1021,6 +1117,8 @@ public sealed class MainForm : Form
     private async Task ToggleTimeScaleAsync(bool enable)
     {
         _timeScaleEnable.Enabled = false;
+        var pulsing = _timeScaleEnable as DarkCheckBox;
+        pulsing?.BeginPulse();
         try
         {
             if (enable)
@@ -1047,6 +1145,7 @@ public sealed class MainForm : Form
         }
         finally
         {
+            pulsing?.EndPulse();
             _timeScaleEnable.Enabled = true;
         }
     }
@@ -1107,6 +1206,7 @@ public sealed class MainForm : Form
         }
         foreach (var c in _combatCombos) c.Enabled = attached;
         foreach (var f in _combatFreezes) f.Enabled = attached;
+        foreach (var b in _combatPresetButtons) b.Enabled = attached;
         _hitboxToggle.Enabled = attached;
         _noLagToggle.Enabled = attached;
         _damageTypeToggle.Enabled = attached;
@@ -1114,6 +1214,7 @@ public sealed class MainForm : Form
         _oneHitKillToggle.Enabled = attached;
         _guardBreakerToggle.Enabled = attached;
         _noDamageToggle.Enabled = attached;
+        _walkThroughWallsToggle.Enabled = attached;
 
         if (!attached)
         {
@@ -1124,6 +1225,7 @@ public sealed class MainForm : Form
             _oneHitKillToggle.Checked = false;
             _guardBreakerToggle.Checked = false;
             _noDamageToggle.Checked = false;
+            _walkThroughWallsToggle.Checked = false;
             _suppressEvents = false;
         }
 

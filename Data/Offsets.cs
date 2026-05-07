@@ -12,6 +12,7 @@ public static class Offsets
     public const uint UnlimitedKeys2 = 0x2056873C;
     public const uint UnlimitedKeys3 = 0x208C2AF4;
     public const int UnlimitedKeysValue = 3;
+    public const int UnlimitedKeys3Value = 15;
 
     public const int GodHandMeterMin = 0;
     public const int GodHandMeterMax = 17172;

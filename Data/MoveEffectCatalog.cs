@@ -35,7 +35,10 @@ public static class MoveEffectCatalog
         new(33, "Enemy Stays on Ground After Hit"),
         new(34, "Ball Buster Hit"),
         new(37, "Head Slicer"),
-        new(38, "Very Heavy Launch / Insta Kill"),
+        new(38, "One Inch Punch"),
         new(40, "Chain Yanker"),
+        new(35, "Mid Air"),
+        new(39, "Typhoon Kick"),
+        new(42, "Spirit"),
     };
 }
