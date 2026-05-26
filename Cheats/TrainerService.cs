@@ -52,6 +52,13 @@ public sealed class TrainerService : IDisposable
         try
         {
             if (Memory.IsAttached) return;
+            if (Memory.Process is not null)
+            {
+                Injection.UninstallAll();
+                Freeze.ClearAll();
+                Memory.Detach();
+                return;
+            }
             Memory.TryAttach();
         }
         catch { /* swallow watchdog errors */ }
