@@ -34,7 +34,8 @@ public sealed class PlayerCheats
 
     public bool SetGodHandMeter(int value)
     {
-        var clamped = (short)Math.Clamp(value, Offsets.GodHandMeterMin, Offsets.GodHandMeterMax);
+        var max = GetGodHandMeterMax() ?? Offsets.GodHandMeterMaxFallback;
+        var clamped = (short)Math.Clamp(value, Offsets.GodHandMeterMin, max);
         return _memory.WriteInt16(Offsets.GodHandMeter, clamped);
     }
 
@@ -42,6 +43,13 @@ public sealed class PlayerCheats
     {
         if (!_memory.IsAttached) return null;
         try { return _memory.ReadInt16(Offsets.GodHandMeter); }
+        catch { return null; }
+    }
+
+    public int? GetGodHandMeterMax()
+    {
+        if (!_memory.IsAttached) return null;
+        try { return _memory.ReadInt16(Offsets.GodHandMeterMaxAddress); }
         catch { return null; }
     }
 

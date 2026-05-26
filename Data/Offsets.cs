@@ -6,6 +6,7 @@ public static class Offsets
 
     public const uint GodMode = 0x205CB010;
     public const uint GodHandMeter = 0x205CB006;
+    public const uint GodHandMeterMaxAddress = 0x205CB002;
     public const uint LevelMeter = 0x205686EC;
 
     public const uint UnlimitedKeys1 = 0x20568738;
@@ -14,8 +15,8 @@ public static class Offsets
     public const int UnlimitedKeysValue = 3;
     public const int UnlimitedKeys3Value = 15;
 
-    public const int GodHandMeterMin = 0;
-    public const int GodHandMeterMax = 17172;
+    public const int GodHandMeterMin = 16440;
+    public const int GodHandMeterMaxFallback = 17172;
     public const int LevelMeterMin = 0;
     public const int LevelMeterMax = 5000;
 

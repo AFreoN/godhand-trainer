@@ -15,8 +15,8 @@ public sealed class MainForm : Form
 
     private CheckBox _godModeToggle = null!;
 
-    private NumericUpDown _godHandMeterInput = null!;
-    private Button _godHandMeterApply = null!;
+    private TrackBar _godHandMeterSlider = null!;
+    private Label _godHandMeterValueLabel = null!;
     private CheckBox _godHandMeterFreeze = null!;
     private NumericUpDown _levelMeterInput = null!;
     private Button _levelMeterApply = null!;
@@ -106,32 +106,24 @@ public sealed class MainForm : Form
         status.Size = new Size(1076, 56);
         Controls.Add(status);
 
+        const int playerHeight = 470;
+
         var player = BuildPlayerGroup();
         player.Location = new Point(leftX, topY);
-        player.Size = new Size(colW, 360);
+        player.Size = new Size(colW, playerHeight);
         Controls.Add(player);
 
-        var unlocks = BuildUnlocksGroup();
-        unlocks.Location = new Point(leftX, topY + 368);
-        unlocks.Size = new Size(colW, 200);
-        Controls.Add(unlocks);
-
         var gameplay = BuildGameplayGroup();
-        gameplay.Location = new Point(leftX, topY + 576);
-        gameplay.Size = new Size(colW, 128);
+        gameplay.Location = new Point(rightX, topY);
+        gameplay.Size = new Size(colW, playerHeight);
         Controls.Add(gameplay);
 
-        var hooks = BuildCombatHooksGroup();
-        hooks.Location = new Point(rightX, topY);
-        hooks.Size = new Size(colW, 170);
-        Controls.Add(hooks);
-
         var combat = BuildCombatGroup();
-        combat.Location = new Point(rightX, topY + 178);
-        combat.Size = new Size(colW, 405);
+        combat.Location = new Point(leftX, topY + playerHeight + 8);
+        combat.Size = new Size(1076, 405);
         Controls.Add(combat);
 
-        var movesDamageY = topY + 704 + 10;
+        var movesDamageY = topY + playerHeight + 8 + 405 + 10;
         _moveDamageSection = BuildMoveDamageSection();
         _moveDamageSection.Location = new Point(leftX, movesDamageY);
         _moveDamageSection.Width = 1076;
@@ -212,7 +204,7 @@ public sealed class MainForm : Form
         _godModeToggle = new DarkCheckBox
         {
             Text = "God Mode",
-            Location = new Point(14, 60),
+            Location = new Point(290, 28),
             AutoSize = true,
             ForeColor = Color.Gainsboro,
         };
@@ -230,40 +222,48 @@ public sealed class MainForm : Form
         {
             Text = "God Hand Meter",
             AutoSize = true,
-            Location = new Point(14, 96),
+            Location = new Point(14, 66),
             ForeColor = Color.Gainsboro,
         };
         box.Controls.Add(ghmLabel);
 
-        _godHandMeterInput = new DarkNumericUpDown
+        _godHandMeterSlider = new TrackBar
         {
-            Location = new Point(110, 90),
-            Size = new Size(80, 30),
-            Minimum = Offsets.GodHandMeterMin,
-            Maximum = Offsets.GodHandMeterMax,
+            Location = new Point(110, 54),
+            Size = new Size(150, 45),
+            Minimum = 0,
+            Maximum = 100,
             Value = 0,
+            TickFrequency = 10,
+            SmallChange = 1,
+            LargeChange = 10,
         };
-        box.Controls.Add(_godHandMeterInput);
-
-        _godHandMeterApply = new DarkButton
+        _godHandMeterSlider.ValueChanged += async (_, _) =>
         {
-            Text = "Apply",
-            Location = new Point(196, 90),
-            Size = new Size(60, 30),
-            Style = DarkButtonStyle.Primary,
-        };
-        _godHandMeterApply.Click += async (_, _) =>
-        {
-            var v = (int)_godHandMeterInput.Value;
+            _godHandMeterValueLabel.Text = (_godHandMeterSlider.Value / 100.0).ToString("0.00");
+            if (_suppressEvents) return;
+            var fraction = _godHandMeterSlider.Value / 100.0;
+            var max = await Task.Run(() => _trainer.Player.GetGodHandMeterMax())
+                      ?? Offsets.GodHandMeterMaxFallback;
+            var v = InterpolateGodHandMeter(fraction, max);
             await Task.Run(() => _trainer.Player.SetGodHandMeter(v));
             if (_godHandMeterFreeze.Checked) RegisterGodHandMeterFreeze();
         };
-        box.Controls.Add(_godHandMeterApply);
+        box.Controls.Add(_godHandMeterSlider);
+
+        _godHandMeterValueLabel = new Label
+        {
+            Text = "0.00",
+            AutoSize = true,
+            Location = new Point(266, 66),
+            ForeColor = Color.Gainsboro,
+        };
+        box.Controls.Add(_godHandMeterValueLabel);
 
         _godHandMeterFreeze = new DarkCheckBox
         {
             Text = "Freeze",
-            Location = new Point(266, 94),
+            Location = new Point(304, 64),
             AutoSize = true,
             ForeColor = Color.Gainsboro,
         };
@@ -275,60 +275,67 @@ public sealed class MainForm : Form
         };
         box.Controls.Add(_godHandMeterFreeze);
 
-        _timeScaleEnable = new DarkCheckBox
+        var lvlLabel = new Label
         {
-            Text = "Player Speed",
-            Location = new Point(14, 128),
+            Text = "Level Meter",
+            AutoSize = true,
+            Location = new Point(14, 100),
+            ForeColor = Color.Gainsboro,
+        };
+        box.Controls.Add(lvlLabel);
+
+        _levelMeterInput = new DarkNumericUpDown
+        {
+            Location = new Point(110, 94),
+            Size = new Size(80, 30),
+            Minimum = Offsets.LevelMeterMin,
+            Maximum = Offsets.LevelMeterMax,
+            Value = 0,
+        };
+        box.Controls.Add(_levelMeterInput);
+
+        _levelMeterApply = new DarkButton
+        {
+            Text = "Apply",
+            Location = new Point(196, 94),
+            Size = new Size(60, 30),
+            Style = DarkButtonStyle.Primary,
+        };
+        _levelMeterApply.Click += async (_, _) =>
+        {
+            var v = (int)_levelMeterInput.Value;
+            await Task.Run(() => _trainer.Player.SetLevelMeter(v));
+            if (_levelMeterFreeze.Checked) RegisterLevelMeterFreeze();
+        };
+        box.Controls.Add(_levelMeterApply);
+
+        _levelMeterFreeze = new DarkCheckBox
+        {
+            Text = "Freeze",
+            Location = new Point(266, 98),
             AutoSize = true,
             ForeColor = Color.Gainsboro,
         };
-        _timeScaleEnable.CheckedChanged += async (_, _) =>
+        _levelMeterFreeze.CheckedChanged += (_, _) =>
         {
             if (_suppressEvents) return;
-            await ToggleTimeScaleAsync(_timeScaleEnable.Checked);
+            if (_levelMeterFreeze.Checked) RegisterLevelMeterFreeze();
+            else _trainer.Freeze.Clear("LevelMeter");
         };
-        box.Controls.Add(_timeScaleEnable);
-
-        _timeScaleSlider = new TrackBar
-        {
-            Location = new Point(60, 155),
-            Size = new Size(350, 45),
-            Minimum = 5,
-            Maximum = 100,
-            Value = 10,
-            TickFrequency = 5,
-            SmallChange = 1,
-            LargeChange = 5,
-        };
-        _timeScaleSlider.ValueChanged += (_, _) =>
-        {
-            if (_suppressEvents) return;
-            var v = _timeScaleSlider.Value / 10f;
-            UpdateTimeScale(v, sourceIsSlider: true);
-        };
-        box.Controls.Add(_timeScaleSlider);
-
-        _timeScaleValueLabel = new Label
-        {
-            Text = "1.0×",
-            AutoSize = true,
-            Location = new Point(420, 162),
-            ForeColor = Color.Gainsboro,
-        };
-        box.Controls.Add(_timeScaleValueLabel);
+        box.Controls.Add(_levelMeterFreeze);
 
         var healthMaxLabel = new Label
         {
             Text = "Health (Max)",
             AutoSize = true,
-            Location = new Point(14, 215),
+            Location = new Point(14, 138),
             ForeColor = Color.Gainsboro,
         };
         box.Controls.Add(healthMaxLabel);
 
         _healthMaxSlider = new TrackBar
         {
-            Location = new Point(14, 235),
+            Location = new Point(14, 158),
             Size = new Size(396, 45),
             Minimum = Offsets.HealthMaxMin,
             Maximum = Offsets.HealthMaxMax,
@@ -351,7 +358,7 @@ public sealed class MainForm : Form
         {
             Text = Offsets.HealthMaxMin.ToString(),
             AutoSize = true,
-            Location = new Point(420, 242),
+            Location = new Point(420, 165),
             ForeColor = Color.Gainsboro,
         };
         box.Controls.Add(_healthMaxValueLabel);
@@ -359,7 +366,7 @@ public sealed class MainForm : Form
         _healthMaxFreeze = new DarkCheckBox
         {
             Text = "Freeze",
-            Location = new Point(450, 240),
+            Location = new Point(450, 163),
             AutoSize = true,
             ForeColor = Color.Gainsboro,
         };
@@ -375,14 +382,14 @@ public sealed class MainForm : Form
         {
             Text = "Heat Gauge (Max)",
             AutoSize = true,
-            Location = new Point(14, 280),
+            Location = new Point(14, 203),
             ForeColor = Color.Gainsboro,
         };
         box.Controls.Add(heatGaugeMaxLabel);
 
         _heatGaugeMaxSlider = new TrackBar
         {
-            Location = new Point(14, 300),
+            Location = new Point(14, 223),
             Size = new Size(396, 45),
             Minimum = Offsets.HeatGaugeMaxMin,
             Maximum = Offsets.HeatGaugeMaxMax,
@@ -405,7 +412,7 @@ public sealed class MainForm : Form
         {
             Text = Offsets.HeatGaugeMaxMin.ToString(),
             AutoSize = true,
-            Location = new Point(420, 307),
+            Location = new Point(420, 230),
             ForeColor = Color.Gainsboro,
         };
         box.Controls.Add(_heatGaugeMaxValueLabel);
@@ -413,7 +420,7 @@ public sealed class MainForm : Form
         _heatGaugeMaxFreeze = new DarkCheckBox
         {
             Text = "Freeze",
-            Location = new Point(450, 305),
+            Location = new Point(450, 228),
             AutoSize = true,
             ForeColor = Color.Gainsboro,
         };
@@ -425,41 +432,28 @@ public sealed class MainForm : Form
         };
         box.Controls.Add(_heatGaugeMaxFreeze);
 
-        return box;
-    }
+        var unlocksDivider = new Label
+        {
+            Text = "Unlocks",
+            AutoSize = true,
+            Location = new Point(14, 278),
+            ForeColor = Color.DimGray,
+            Font = new Font("Segoe UI", 8.25f, FontStyle.Bold),
+        };
+        box.Controls.Add(unlocksDivider);
 
-    private void RegisterHealthMaxFreeze()
-    {
-        var v = _healthMaxSlider.Value;
-        _trainer.Freeze.Set("HealthMax", () => _trainer.Player.SetHealthMax(v));
-    }
-
-    private void RegisterHeatGaugeMaxFreeze()
-    {
-        var v = _heatGaugeMaxSlider.Value;
-        _trainer.Freeze.Set("HeatGaugeMax", () => _trainer.Player.SetHeatGaugeMax(v));
-    }
-
-    private void RegisterGodHandMeterFreeze()
-    {
-        var v = (int)_godHandMeterInput.Value;
-        _trainer.Freeze.Set("GodHandMeter", () => _trainer.Player.SetGodHandMeter(v));
-    }
-
-    private void RegisterLevelMeterFreeze()
-    {
-        var v = (int)_levelMeterInput.Value;
-        _trainer.Freeze.Set("LevelMeter", () => _trainer.Player.SetLevelMeter(v));
-    }
-
-    private GroupBox BuildUnlocksGroup()
-    {
-        var box = NewGroup("Unlocks");
+        var unlocksRule = new Panel
+        {
+            Location = new Point(70, 286),
+            Size = new Size(444, 1),
+            BackColor = Color.FromArgb(60, 60, 66),
+        };
+        box.Controls.Add(unlocksRule);
 
         _movesUnlockButton = new DarkButton
         {
             Text = "Unlock All Moves",
-            Location = new Point(14, 30),
+            Location = new Point(14, 300),
             Size = new Size(220, 34),
             Style = DarkButtonStyle.Success,
         };
@@ -469,7 +463,7 @@ public sealed class MainForm : Form
         _rouletteUnlockButton = new DarkButton
         {
             Text = "Unlock All Roulettes",
-            Location = new Point(244, 30),
+            Location = new Point(244, 300),
             Size = new Size(220, 34),
             Style = DarkButtonStyle.Warning,
         };
@@ -480,14 +474,14 @@ public sealed class MainForm : Form
         {
             Text = "Costume",
             AutoSize = true,
-            Location = new Point(14, 80),
+            Location = new Point(14, 350),
             ForeColor = Color.Gainsboro,
         };
         box.Controls.Add(costumeLabel);
 
         _costumeCombo = new DarkComboBox
         {
-            Location = new Point(140, 74),
+            Location = new Point(140, 344),
             Size = new Size(180, 30),
         };
         _costumeCombo.Items.AddRange(new object[]
@@ -514,7 +508,7 @@ public sealed class MainForm : Form
         _costumeFreeze = new DarkCheckBox
         {
             Text = "Freeze",
-            Location = new Point(330, 78),
+            Location = new Point(330, 348),
             AutoSize = true,
             ForeColor = Color.Gainsboro,
         };
@@ -530,14 +524,14 @@ public sealed class MainForm : Form
         {
             Text = "Roulette Slots",
             AutoSize = true,
-            Location = new Point(14, 122),
+            Location = new Point(14, 388),
             ForeColor = Color.Gainsboro,
         };
         box.Controls.Add(slotsLabel);
 
         _rouletteSlotsInput = new DarkNumericUpDown
         {
-            Location = new Point(140, 116),
+            Location = new Point(140, 382),
             Size = new Size(60, 30),
             Minimum = Offsets.RouletteSlotsMin,
             Maximum = Offsets.RouletteSlotsMax,
@@ -548,7 +542,7 @@ public sealed class MainForm : Form
         _rouletteSlotsApply = new DarkButton
         {
             Text = "Apply",
-            Location = new Point(210, 116),
+            Location = new Point(210, 382),
             Size = new Size(80, 30),
             Style = DarkButtonStyle.Primary,
         };
@@ -563,7 +557,7 @@ public sealed class MainForm : Form
         _rouletteSlotsFreeze = new DarkCheckBox
         {
             Text = "Freeze",
-            Location = new Point(300, 120),
+            Location = new Point(300, 386),
             AutoSize = true,
             ForeColor = Color.Gainsboro,
         };
@@ -579,14 +573,14 @@ public sealed class MainForm : Form
         {
             Text = "Roulette Available",
             AutoSize = true,
-            Location = new Point(14, 164),
+            Location = new Point(14, 426),
             ForeColor = Color.Gainsboro,
         };
         box.Controls.Add(availableLabel);
 
         _rouletteAvailableInput = new DarkNumericUpDown
         {
-            Location = new Point(140, 158),
+            Location = new Point(140, 420),
             Size = new Size(60, 30),
             Minimum = 0,
             Maximum = Offsets.RouletteAvailableMax,
@@ -597,7 +591,7 @@ public sealed class MainForm : Form
         _rouletteAvailableApply = new DarkButton
         {
             Text = "Apply",
-            Location = new Point(210, 158),
+            Location = new Point(210, 420),
             Size = new Size(80, 30),
             Style = DarkButtonStyle.Primary,
         };
@@ -613,7 +607,7 @@ public sealed class MainForm : Form
         _rouletteAvailableFreeze = new DarkCheckBox
         {
             Text = "Freeze",
-            Location = new Point(300, 162),
+            Location = new Point(300, 424),
             AutoSize = true,
             ForeColor = Color.Gainsboro,
         };
@@ -626,6 +620,53 @@ public sealed class MainForm : Form
         box.Controls.Add(_rouletteAvailableFreeze);
 
         return box;
+    }
+
+    private void RegisterHealthMaxFreeze()
+    {
+        var v = _healthMaxSlider.Value;
+        _trainer.Freeze.Set("HealthMax", () => _trainer.Player.SetHealthMax(v));
+    }
+
+    private void RegisterHeatGaugeMaxFreeze()
+    {
+        var v = _heatGaugeMaxSlider.Value;
+        _trainer.Freeze.Set("HeatGaugeMax", () => _trainer.Player.SetHeatGaugeMax(v));
+    }
+
+    private void RegisterGodHandMeterFreeze()
+    {
+        var fraction = _godHandMeterSlider.Value / 100.0;
+        _trainer.Freeze.Set("GodHandMeter", () =>
+        {
+            var max = _trainer.Player.GetGodHandMeterMax() ?? Offsets.GodHandMeterMaxFallback;
+            _trainer.Player.SetGodHandMeter(InterpolateGodHandMeter(fraction, max));
+        });
+    }
+
+    private const double GodHandMeterGamma = 3.5;
+
+    private static int InterpolateGodHandMeter(double fraction, int max)
+    {
+        var lo = Offsets.GodHandMeterMin;
+        var hi = Math.Max(max, lo);
+        var clamped = Math.Clamp(fraction, 0.0, 1.0);
+        var curved = Math.Pow(clamped, 1.0 / GodHandMeterGamma);
+        return (int)Math.Round(lo + curved * (hi - lo));
+    }
+
+    private static double GodHandMeterFractionFromRaw(int raw, int max)
+    {
+        var lo = Offsets.GodHandMeterMin;
+        var span = Math.Max(max - lo, 1);
+        var linear = Math.Clamp((double)(raw - lo) / span, 0.0, 1.0);
+        return Math.Pow(linear, GodHandMeterGamma);
+    }
+
+    private void RegisterLevelMeterFreeze()
+    {
+        var v = (int)_levelMeterInput.Value;
+        _trainer.Freeze.Set("LevelMeter", () => _trainer.Player.SetLevelMeter(v));
     }
 
     private void RegisterCostumeFreeze()
@@ -651,59 +692,52 @@ public sealed class MainForm : Form
     {
         var box = NewGroup("Gameplay");
 
-        var lvlLabel = new Label
+        _timeScaleEnable = new DarkCheckBox
         {
-            Text = "Level Meter",
-            AutoSize = true,
+            Text = "Player Speed",
             Location = new Point(14, 28),
-            ForeColor = Color.Gainsboro,
-        };
-        box.Controls.Add(lvlLabel);
-
-        _levelMeterInput = new DarkNumericUpDown
-        {
-            Location = new Point(110, 22),
-            Size = new Size(80, 30),
-            Minimum = Offsets.LevelMeterMin,
-            Maximum = Offsets.LevelMeterMax,
-            Value = 0,
-        };
-        box.Controls.Add(_levelMeterInput);
-
-        _levelMeterApply = new DarkButton
-        {
-            Text = "Apply",
-            Location = new Point(196, 22),
-            Size = new Size(60, 30),
-            Style = DarkButtonStyle.Primary,
-        };
-        _levelMeterApply.Click += async (_, _) =>
-        {
-            var v = (int)_levelMeterInput.Value;
-            await Task.Run(() => _trainer.Player.SetLevelMeter(v));
-            if (_levelMeterFreeze.Checked) RegisterLevelMeterFreeze();
-        };
-        box.Controls.Add(_levelMeterApply);
-
-        _levelMeterFreeze = new DarkCheckBox
-        {
-            Text = "Freeze",
-            Location = new Point(266, 26),
             AutoSize = true,
             ForeColor = Color.Gainsboro,
         };
-        _levelMeterFreeze.CheckedChanged += (_, _) =>
+        _timeScaleEnable.CheckedChanged += async (_, _) =>
         {
             if (_suppressEvents) return;
-            if (_levelMeterFreeze.Checked) RegisterLevelMeterFreeze();
-            else _trainer.Freeze.Clear("LevelMeter");
+            await ToggleTimeScaleAsync(_timeScaleEnable.Checked);
         };
-        box.Controls.Add(_levelMeterFreeze);
+        box.Controls.Add(_timeScaleEnable);
+
+        _timeScaleSlider = new TrackBar
+        {
+            Location = new Point(14, 55),
+            Size = new Size(396, 45),
+            Minimum = 5,
+            Maximum = 100,
+            Value = 10,
+            TickFrequency = 5,
+            SmallChange = 1,
+            LargeChange = 5,
+        };
+        _timeScaleSlider.ValueChanged += (_, _) =>
+        {
+            if (_suppressEvents) return;
+            var v = _timeScaleSlider.Value / 10f;
+            UpdateTimeScale(v, sourceIsSlider: true);
+        };
+        box.Controls.Add(_timeScaleSlider);
+
+        _timeScaleValueLabel = new Label
+        {
+            Text = "1.0×",
+            AutoSize = true,
+            Location = new Point(420, 62),
+            ForeColor = Color.Gainsboro,
+        };
+        box.Controls.Add(_timeScaleValueLabel);
 
         _unlimitedKeysToggle = new DarkCheckBox
         {
             Text = "Unlimited Keys",
-            Location = new Point(14, 60),
+            Location = new Point(14, 110),
             AutoSize = true,
             ForeColor = Color.Gainsboro,
         };
@@ -718,7 +752,7 @@ public sealed class MainForm : Form
         _walkThroughWallsToggle = new DarkCheckBox
         {
             Text = "Walk Through Walls",
-            Location = new Point(14, 92),
+            Location = new Point(180, 110),
             AutoSize = true,
             ForeColor = Color.Gainsboro,
         };
@@ -732,27 +766,29 @@ public sealed class MainForm : Form
         };
         box.Controls.Add(_walkThroughWallsToggle);
 
-        return box;
-    }
-
-    private void RegisterUnlimitedKeysFreeze()
-    {
-        _trainer.Freeze.Set("UnlimitedKeys", () =>
+        var hooksDivider = new Label
         {
-            _trainer.Player.SetUnlimitedKeys();
-        });
-    }
+            Text = "Combat Hooks",
+            AutoSize = true,
+            Location = new Point(14, 148),
+            ForeColor = Color.DimGray,
+            Font = new Font("Segoe UI", 8.25f, FontStyle.Bold),
+        };
+        box.Controls.Add(hooksDivider);
 
-
-    private GroupBox BuildCombatHooksGroup()
-    {
-        var box = NewGroup("Combat Hooks");
+        var hooksRule = new Panel
+        {
+            Location = new Point(96, 156),
+            Size = new Size(418, 1),
+            BackColor = Color.FromArgb(60, 60, 66),
+        };
+        box.Controls.Add(hooksRule);
 
         _hitboxToggle = new DarkCheckBox
         {
             Text = "Hitbox Large",
             AutoSize = true,
-            Location = new Point(14, 28),
+            Location = new Point(14, 170),
             ForeColor = Color.Gainsboro,
         };
         _hitboxToggle.CheckedChanged += async (_, _) =>
@@ -769,7 +805,7 @@ public sealed class MainForm : Form
         {
             Text = "Quick Move Relief (no lag)",
             AutoSize = true,
-            Location = new Point(260, 28),
+            Location = new Point(180, 170),
             ForeColor = Color.Gainsboro,
         };
         _noLagToggle.CheckedChanged += async (_, _) =>
@@ -786,7 +822,7 @@ public sealed class MainForm : Form
         {
             Text = "One Hit Kill",
             AutoSize = true,
-            Location = new Point(14, 64),
+            Location = new Point(14, 202),
             ForeColor = Color.Gainsboro,
         };
         _oneHitKillToggle.CheckedChanged += async (_, _) =>
@@ -803,7 +839,7 @@ public sealed class MainForm : Form
         {
             Text = "No Damage",
             AutoSize = true,
-            Location = new Point(140, 64),
+            Location = new Point(140, 202),
             ForeColor = Color.Gainsboro,
         };
         _noDamageToggle.CheckedChanged += async (_, _) =>
@@ -820,7 +856,7 @@ public sealed class MainForm : Form
         {
             Text = "Guard Breaker",
             AutoSize = true,
-            Location = new Point(260, 64),
+            Location = new Point(260, 202),
             ForeColor = Color.Gainsboro,
         };
         _guardBreakerToggle.CheckedChanged += async (_, _) =>
@@ -837,7 +873,7 @@ public sealed class MainForm : Form
         {
             Text = "Damage Type",
             AutoSize = true,
-            Location = new Point(14, 100),
+            Location = new Point(14, 238),
             ForeColor = Color.Gainsboro,
         };
         _damageTypeToggle.CheckedChanged += async (_, _) =>
@@ -858,7 +894,7 @@ public sealed class MainForm : Form
 
         _moveEffectCombo = new DarkComboBox
         {
-            Location = new Point(140, 110),
+            Location = new Point(140, 234),
             Size = new Size(330, 30),
             DropDownHeight = 200,
         };
@@ -875,6 +911,15 @@ public sealed class MainForm : Form
 
         return box;
     }
+
+    private void RegisterUnlimitedKeysFreeze()
+    {
+        _trainer.Freeze.Set("UnlimitedKeys", () =>
+        {
+            _trainer.Player.SetUnlimitedKeys();
+        });
+    }
+
 
     private async Task ToggleHookAsync(CheckBox toggle, Func<bool> install, Func<bool> uninstall, string name)
     {
@@ -1321,15 +1366,22 @@ public sealed class MainForm : Form
 
     private async Task SyncPlayerMetersFromMemoryAsync()
     {
-        var (gh, lvl, hp, heat) = await Task.Run(() =>
-            (_trainer.Player.GetGodHandMeter(), _trainer.Player.GetLevelMeter(),
+        var (gh, ghMax, lvl, hp, heat) = await Task.Run(() =>
+            (_trainer.Player.GetGodHandMeter(), _trainer.Player.GetGodHandMeterMax(),
+             _trainer.Player.GetLevelMeter(),
              _trainer.Player.GetHealthMax(), _trainer.Player.GetHeatGaugeMax()));
 
         _suppressEvents = true;
         try
         {
             if (gh is int g)
-                _godHandMeterInput.Value = Math.Clamp(g, (int)_godHandMeterInput.Minimum, (int)_godHandMeterInput.Maximum);
+            {
+                var max = (ghMax is int gm && gm > Offsets.GodHandMeterMin) ? gm : Offsets.GodHandMeterMaxFallback;
+                var fraction = GodHandMeterFractionFromRaw(g, max);
+                var slider = (int)Math.Round(fraction * 100.0);
+                _godHandMeterSlider.Value = Math.Clamp(slider, _godHandMeterSlider.Minimum, _godHandMeterSlider.Maximum);
+                _godHandMeterValueLabel.Text = (fraction).ToString("0.00");
+            }
             if (lvl is int l)
                 _levelMeterInput.Value = Math.Clamp(l, (int)_levelMeterInput.Minimum, (int)_levelMeterInput.Maximum);
             if (hp is int h)
@@ -1437,8 +1489,7 @@ public sealed class MainForm : Form
         _goldApply.Enabled = attached;
         _goldInput.Enabled = attached;
         _godModeToggle.Enabled = attached;
-        _godHandMeterInput.Enabled = attached;
-        _godHandMeterApply.Enabled = attached;
+        _godHandMeterSlider.Enabled = attached;
         _godHandMeterFreeze.Enabled = attached;
         _levelMeterInput.Enabled = attached;
         _levelMeterApply.Enabled = attached;
