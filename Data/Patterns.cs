@@ -56,9 +56,9 @@ public static class Patterns
     public const int NoDamagePatchSize = 13;
 
     public const string UnBlockerSign =
-        "0F B6 01 A3 40 9F 5E 01 C7 05 44 9F 5E 01 00 00 00 00 83 3D 40 9F 5E 01 00 " +
-        "75 0D 83 3D 44 9F 5E 01 00 0F 84 39 00 00 00 31 C0 A3 54 9F 5E 01 C7 05 50 9F 5E 01 " +
-        "00 00 60 00 C7 05 B8 A1 5E 01 44";
+        "0F B6 01 A3 40 9F F5 01 C7 05 44 9F ?? 01 00 00 00 00 83 3D 40 9F ?? 01 00 " +
+        "75 0D 83 3D 44 9F ?? 01 00 0F 84 39 00 00 00 31 C0 A3 54 9F ?? 01 C7 05 50 9F ?? 01 " +
+        "00 00 60 00 C7 05 B8 A1 ?? 01 44";
 
     public const int UnBlockerImmediateOffset = 24;
 

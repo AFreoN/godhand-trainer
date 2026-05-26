@@ -22,6 +22,13 @@ public sealed class MainForm : Form
     private Button _levelMeterApply = null!;
     private CheckBox _levelMeterFreeze = null!;
 
+    private TrackBar _healthMaxSlider = null!;
+    private Label _healthMaxValueLabel = null!;
+    private CheckBox _healthMaxFreeze = null!;
+    private TrackBar _heatGaugeMaxSlider = null!;
+    private Label _heatGaugeMaxValueLabel = null!;
+    private CheckBox _heatGaugeMaxFreeze = null!;
+
     private CheckBox _unlimitedKeysToggle = null!;
 
     private Button _movesUnlockButton = null!;
@@ -80,7 +87,7 @@ public sealed class MainForm : Form
     private void BuildUi()
     {
         Text = "God Hand Trainer";
-        ClientSize = new Size(1100, 900);
+        ClientSize = new Size(1100, 1020);
         AutoScroll = false;
         FormBorderStyle = FormBorderStyle.FixedSingle;
         MaximizeBox = false;
@@ -101,16 +108,16 @@ public sealed class MainForm : Form
 
         var player = BuildPlayerGroup();
         player.Location = new Point(leftX, topY);
-        player.Size = new Size(colW, 220);
+        player.Size = new Size(colW, 360);
         Controls.Add(player);
 
         var unlocks = BuildUnlocksGroup();
-        unlocks.Location = new Point(leftX, topY + 228);
+        unlocks.Location = new Point(leftX, topY + 368);
         unlocks.Size = new Size(colW, 200);
         Controls.Add(unlocks);
 
         var gameplay = BuildGameplayGroup();
-        gameplay.Location = new Point(leftX, topY + 436);
+        gameplay.Location = new Point(leftX, topY + 576);
         gameplay.Size = new Size(colW, 128);
         Controls.Add(gameplay);
 
@@ -124,7 +131,7 @@ public sealed class MainForm : Form
         combat.Size = new Size(colW, 405);
         Controls.Add(combat);
 
-        var movesDamageY = topY + 584 + 10;
+        var movesDamageY = topY + 704 + 10;
         _moveDamageSection = BuildMoveDamageSection();
         _moveDamageSection.Location = new Point(leftX, movesDamageY);
         _moveDamageSection.Width = 1076;
@@ -310,7 +317,127 @@ public sealed class MainForm : Form
         };
         box.Controls.Add(_timeScaleValueLabel);
 
+        var healthMaxLabel = new Label
+        {
+            Text = "Health (Max)",
+            AutoSize = true,
+            Location = new Point(14, 215),
+            ForeColor = Color.Gainsboro,
+        };
+        box.Controls.Add(healthMaxLabel);
+
+        _healthMaxSlider = new TrackBar
+        {
+            Location = new Point(14, 235),
+            Size = new Size(396, 45),
+            Minimum = Offsets.HealthMaxMin,
+            Maximum = Offsets.HealthMaxMax,
+            Value = Offsets.HealthMaxMin,
+            TickFrequency = 1,
+            SmallChange = 1,
+            LargeChange = 1,
+        };
+        _healthMaxSlider.ValueChanged += async (_, _) =>
+        {
+            _healthMaxValueLabel.Text = _healthMaxSlider.Value.ToString();
+            if (_suppressEvents) return;
+            var v = _healthMaxSlider.Value;
+            await Task.Run(() => _trainer.Player.SetHealthMax(v));
+            if (_healthMaxFreeze.Checked) RegisterHealthMaxFreeze();
+        };
+        box.Controls.Add(_healthMaxSlider);
+
+        _healthMaxValueLabel = new Label
+        {
+            Text = Offsets.HealthMaxMin.ToString(),
+            AutoSize = true,
+            Location = new Point(420, 242),
+            ForeColor = Color.Gainsboro,
+        };
+        box.Controls.Add(_healthMaxValueLabel);
+
+        _healthMaxFreeze = new DarkCheckBox
+        {
+            Text = "Freeze",
+            Location = new Point(450, 240),
+            AutoSize = true,
+            ForeColor = Color.Gainsboro,
+        };
+        _healthMaxFreeze.CheckedChanged += (_, _) =>
+        {
+            if (_suppressEvents) return;
+            if (_healthMaxFreeze.Checked) RegisterHealthMaxFreeze();
+            else _trainer.Freeze.Clear("HealthMax");
+        };
+        box.Controls.Add(_healthMaxFreeze);
+
+        var heatGaugeMaxLabel = new Label
+        {
+            Text = "Heat Gauge (Max)",
+            AutoSize = true,
+            Location = new Point(14, 280),
+            ForeColor = Color.Gainsboro,
+        };
+        box.Controls.Add(heatGaugeMaxLabel);
+
+        _heatGaugeMaxSlider = new TrackBar
+        {
+            Location = new Point(14, 300),
+            Size = new Size(396, 45),
+            Minimum = Offsets.HeatGaugeMaxMin,
+            Maximum = Offsets.HeatGaugeMaxMax,
+            Value = Offsets.HeatGaugeMaxMin,
+            TickFrequency = 1,
+            SmallChange = 1,
+            LargeChange = 1,
+        };
+        _heatGaugeMaxSlider.ValueChanged += async (_, _) =>
+        {
+            _heatGaugeMaxValueLabel.Text = _heatGaugeMaxSlider.Value.ToString();
+            if (_suppressEvents) return;
+            var v = _heatGaugeMaxSlider.Value;
+            await Task.Run(() => _trainer.Player.SetHeatGaugeMax(v));
+            if (_heatGaugeMaxFreeze.Checked) RegisterHeatGaugeMaxFreeze();
+        };
+        box.Controls.Add(_heatGaugeMaxSlider);
+
+        _heatGaugeMaxValueLabel = new Label
+        {
+            Text = Offsets.HeatGaugeMaxMin.ToString(),
+            AutoSize = true,
+            Location = new Point(420, 307),
+            ForeColor = Color.Gainsboro,
+        };
+        box.Controls.Add(_heatGaugeMaxValueLabel);
+
+        _heatGaugeMaxFreeze = new DarkCheckBox
+        {
+            Text = "Freeze",
+            Location = new Point(450, 305),
+            AutoSize = true,
+            ForeColor = Color.Gainsboro,
+        };
+        _heatGaugeMaxFreeze.CheckedChanged += (_, _) =>
+        {
+            if (_suppressEvents) return;
+            if (_heatGaugeMaxFreeze.Checked) RegisterHeatGaugeMaxFreeze();
+            else _trainer.Freeze.Clear("HeatGaugeMax");
+        };
+        box.Controls.Add(_heatGaugeMaxFreeze);
+
         return box;
+    }
+
+    private void RegisterHealthMaxFreeze()
+    {
+        var v = _healthMaxSlider.Value;
+        _trainer.Freeze.Set("HealthMax", () => _trainer.Player.SetHealthMax(v));
+    }
+
+    private void RegisterHeatGaugeMaxFreeze()
+    {
+        var v = _heatGaugeMaxSlider.Value;
+        _trainer.Freeze.Set("HeatGaugeMax", () => _trainer.Player.SetHeatGaugeMax(v));
     }
 
     private void RegisterGodHandMeterFreeze()
@@ -1194,8 +1321,9 @@ public sealed class MainForm : Form
 
     private async Task SyncPlayerMetersFromMemoryAsync()
     {
-        var (gh, lvl) = await Task.Run(() =>
-            (_trainer.Player.GetGodHandMeter(), _trainer.Player.GetLevelMeter()));
+        var (gh, lvl, hp, heat) = await Task.Run(() =>
+            (_trainer.Player.GetGodHandMeter(), _trainer.Player.GetLevelMeter(),
+             _trainer.Player.GetHealthMax(), _trainer.Player.GetHeatGaugeMax()));
 
         _suppressEvents = true;
         try
@@ -1204,6 +1332,18 @@ public sealed class MainForm : Form
                 _godHandMeterInput.Value = Math.Clamp(g, (int)_godHandMeterInput.Minimum, (int)_godHandMeterInput.Maximum);
             if (lvl is int l)
                 _levelMeterInput.Value = Math.Clamp(l, (int)_levelMeterInput.Minimum, (int)_levelMeterInput.Maximum);
+            if (hp is int h)
+            {
+                var clamped = Math.Clamp(h, _healthMaxSlider.Minimum, _healthMaxSlider.Maximum);
+                _healthMaxSlider.Value = clamped;
+                _healthMaxValueLabel.Text = clamped.ToString();
+            }
+            if (heat is int ht)
+            {
+                var clamped = Math.Clamp(ht, _heatGaugeMaxSlider.Minimum, _heatGaugeMaxSlider.Maximum);
+                _heatGaugeMaxSlider.Value = clamped;
+                _heatGaugeMaxValueLabel.Text = clamped.ToString();
+            }
         }
         finally { _suppressEvents = false; }
     }
@@ -1317,6 +1457,10 @@ public sealed class MainForm : Form
         _levelMeterApply.Enabled = attached;
         _levelMeterFreeze.Enabled = attached;
         _unlimitedKeysToggle.Enabled = attached;
+        _healthMaxSlider.Enabled = attached;
+        _healthMaxFreeze.Enabled = attached;
+        _heatGaugeMaxSlider.Enabled = attached;
+        _heatGaugeMaxFreeze.Enabled = attached;
 
         if (!attached)
         {
@@ -1329,6 +1473,8 @@ public sealed class MainForm : Form
             _godHandMeterFreeze.Checked = false;
             _levelMeterFreeze.Checked = false;
             _unlimitedKeysToggle.Checked = false;
+            _healthMaxFreeze.Checked = false;
+            _heatGaugeMaxFreeze.Checked = false;
             foreach (var f in _combatFreezes) f.Checked = false;
             _suppressEvents = false;
             _trainer.Freeze.ClearAll();

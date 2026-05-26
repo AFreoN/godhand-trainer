@@ -19,6 +19,13 @@ public static class Offsets
     public const int LevelMeterMin = 0;
     public const int LevelMeterMax = 5000;
 
+    public const uint HealthMax = 0x20568824;
+    public const uint HeatGaugeMax = 0x20568825;
+    public const byte HealthMaxMin = 0;
+    public const byte HealthMaxMax = 24;
+    public const byte HeatGaugeMaxMin = 0;
+    public const byte HeatGaugeMaxMax = 24;
+
     public const uint AllRoulettesUnlock = 0x20568800;
     public const uint RouletteSlots = 0x20568826;
     public const uint RouletteSlotsHolder = 0x20568768;

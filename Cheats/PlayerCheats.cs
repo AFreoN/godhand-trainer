@@ -58,6 +58,32 @@ public sealed class PlayerCheats
         catch { return null; }
     }
 
+    public bool SetHealthMax(int value)
+    {
+        var clamped = (byte)Math.Clamp(value, Offsets.HealthMaxMin, Offsets.HealthMaxMax);
+        return _memory.WriteByte(Offsets.HealthMax, clamped);
+    }
+
+    public int? GetHealthMax()
+    {
+        if (!_memory.IsAttached) return null;
+        try { return _memory.ReadByte(Offsets.HealthMax); }
+        catch { return null; }
+    }
+
+    public bool SetHeatGaugeMax(int value)
+    {
+        var clamped = (byte)Math.Clamp(value, Offsets.HeatGaugeMaxMin, Offsets.HeatGaugeMaxMax);
+        return _memory.WriteByte(Offsets.HeatGaugeMax, clamped);
+    }
+
+    public int? GetHeatGaugeMax()
+    {
+        if (!_memory.IsAttached) return null;
+        try { return _memory.ReadByte(Offsets.HeatGaugeMax); }
+        catch { return null; }
+    }
+
     public bool SetUnlimitedKeys()
     {
         var success = true;
