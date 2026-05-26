@@ -26,11 +26,15 @@ public sealed class MainForm : Form
 
     private Button _movesUnlockButton = null!;
     private Button _rouletteUnlockButton = null!;
-    private ComboBox _doubleGodHandCombo = null!;
+    private ComboBox _costumeCombo = null!;
     private NumericUpDown _rouletteSlotsInput = null!;
     private Button _rouletteSlotsApply = null!;
-    private CheckBox _doubleGodHandFreeze = null!;
+    private CheckBox _costumeFreeze = null!;
     private CheckBox _rouletteSlotsFreeze = null!;
+    private NumericUpDown _rouletteAvailableInput = null!;
+    private Button _rouletteAvailableApply = null!;
+    private CheckBox _rouletteAvailableFreeze = null!;
+    private CancellationTokenSource? _unlocksSyncCts;
 
     private CheckBox _timeScaleEnable = null!;
     private TrackBar _timeScaleSlider = null!;
@@ -66,6 +70,7 @@ public sealed class MainForm : Form
         FormClosed += (_, _) =>
         {
             StopCombatSyncLoop();
+            StopUnlocksSyncLoop();
             _trainer.Dispose();
         };
 
@@ -101,11 +106,11 @@ public sealed class MainForm : Form
 
         var unlocks = BuildUnlocksGroup();
         unlocks.Location = new Point(leftX, topY + 228);
-        unlocks.Size = new Size(colW, 180);
+        unlocks.Size = new Size(colW, 200);
         Controls.Add(unlocks);
 
         var gameplay = BuildGameplayGroup();
-        gameplay.Location = new Point(leftX, topY + 416);
+        gameplay.Location = new Point(leftX, topY + 436);
         gameplay.Size = new Size(colW, 128);
         Controls.Add(gameplay);
 
@@ -344,45 +349,55 @@ public sealed class MainForm : Form
         _rouletteUnlockButton.Click += async (_, _) => await Task.Run(() => _trainer.Unlocks.UnlockAllRoulettes());
         box.Controls.Add(_rouletteUnlockButton);
 
-        var dghLabel = new Label
+        var costumeLabel = new Label
         {
-            Text = "Double God Hand",
+            Text = "Costume",
             AutoSize = true,
             Location = new Point(14, 80),
             ForeColor = Color.Gainsboro,
         };
-        box.Controls.Add(dghLabel);
+        box.Controls.Add(costumeLabel);
 
-        _doubleGodHandCombo = new DarkComboBox
+        _costumeCombo = new DarkComboBox
         {
             Location = new Point(140, 74),
             Size = new Size(180, 30),
         };
-        _doubleGodHandCombo.Items.AddRange(new object[] { "Default", "Karate Double", "Devil Double" });
-        _doubleGodHandCombo.SelectedIndex = 0;
-        _doubleGodHandCombo.SelectedIndexChanged += async (_, _) =>
+        _costumeCombo.Items.AddRange(new object[]
+        {
+            "Original",
+            "Original Double",
+            "Devil",
+            "Devil Double",
+            "Karate",
+            "Karate Double",
+            "Carnival",
+            "Carnival Double",
+        });
+        _costumeCombo.SelectedIndex = 0;
+        _costumeCombo.SelectedIndexChanged += async (_, _) =>
         {
             if (_suppressEvents) return;
-            var mode = (DoubleGodHandMode)_doubleGodHandCombo.SelectedIndex;
-            await Task.Run(() => _trainer.Unlocks.SetDoubleGodHand(mode));
-            if (_doubleGodHandFreeze.Checked) RegisterDoubleGodHandFreeze();
+            var costume = (Costume)_costumeCombo.SelectedIndex;
+            await Task.Run(() => _trainer.Unlocks.SetCostume(costume));
+            if (_costumeFreeze.Checked) RegisterCostumeFreeze();
         };
-        box.Controls.Add(_doubleGodHandCombo);
+        box.Controls.Add(_costumeCombo);
 
-        _doubleGodHandFreeze = new DarkCheckBox
+        _costumeFreeze = new DarkCheckBox
         {
             Text = "Freeze",
             Location = new Point(330, 78),
             AutoSize = true,
             ForeColor = Color.Gainsboro,
         };
-        _doubleGodHandFreeze.CheckedChanged += (_, _) =>
+        _costumeFreeze.CheckedChanged += (_, _) =>
         {
             if (_suppressEvents) return;
-            if (_doubleGodHandFreeze.Checked) RegisterDoubleGodHandFreeze();
-            else _trainer.Freeze.Clear("DoubleGodHand");
+            if (_costumeFreeze.Checked) RegisterCostumeFreeze();
+            else _trainer.Freeze.Clear("Costume");
         };
-        box.Controls.Add(_doubleGodHandFreeze);
+        box.Controls.Add(_costumeFreeze);
 
         var slotsLabel = new Label
         {
@@ -433,19 +448,76 @@ public sealed class MainForm : Form
         };
         box.Controls.Add(_rouletteSlotsFreeze);
 
+        var availableLabel = new Label
+        {
+            Text = "Roulette Available",
+            AutoSize = true,
+            Location = new Point(14, 164),
+            ForeColor = Color.Gainsboro,
+        };
+        box.Controls.Add(availableLabel);
+
+        _rouletteAvailableInput = new DarkNumericUpDown
+        {
+            Location = new Point(140, 158),
+            Size = new Size(60, 30),
+            Minimum = 0,
+            Maximum = Offsets.RouletteAvailableMax,
+            Value = 0,
+        };
+        box.Controls.Add(_rouletteAvailableInput);
+
+        _rouletteAvailableApply = new DarkButton
+        {
+            Text = "Apply",
+            Location = new Point(210, 158),
+            Size = new Size(80, 30),
+            Style = DarkButtonStyle.Primary,
+        };
+        _rouletteAvailableApply.Click += async (_, _) =>
+        {
+            var v = (byte)_rouletteAvailableInput.Value;
+            if (v < Offsets.RouletteAvailableMin) return;
+            await Task.Run(() => _trainer.Unlocks.SetRouletteAvailable(v));
+            if (_rouletteAvailableFreeze.Checked) RegisterRouletteAvailableFreeze();
+        };
+        box.Controls.Add(_rouletteAvailableApply);
+
+        _rouletteAvailableFreeze = new DarkCheckBox
+        {
+            Text = "Freeze",
+            Location = new Point(300, 162),
+            AutoSize = true,
+            ForeColor = Color.Gainsboro,
+        };
+        _rouletteAvailableFreeze.CheckedChanged += (_, _) =>
+        {
+            if (_suppressEvents) return;
+            if (_rouletteAvailableFreeze.Checked) RegisterRouletteAvailableFreeze();
+            else _trainer.Freeze.Clear("RouletteAvailable");
+        };
+        box.Controls.Add(_rouletteAvailableFreeze);
+
         return box;
     }
 
-    private void RegisterDoubleGodHandFreeze()
+    private void RegisterCostumeFreeze()
     {
-        var mode = (DoubleGodHandMode)_doubleGodHandCombo.SelectedIndex;
-        _trainer.Freeze.Set("DoubleGodHand", () => _trainer.Unlocks.SetDoubleGodHand(mode));
+        var costume = (Costume)_costumeCombo.SelectedIndex;
+        _trainer.Freeze.Set("Costume", () => _trainer.Unlocks.SetCostume(costume));
     }
 
     private void RegisterRouletteSlotsFreeze()
     {
         var v = (byte)_rouletteSlotsInput.Value;
         _trainer.Freeze.Set("RouletteSlots", () => _trainer.Unlocks.SetRouletteSlots(v));
+    }
+
+    private void RegisterRouletteAvailableFreeze()
+    {
+        var v = (byte)_rouletteAvailableInput.Value;
+        if (v < Offsets.RouletteAvailableMin) return;
+        _trainer.Freeze.Set("RouletteAvailable", () => _trainer.Unlocks.SetRouletteAvailable(v));
     }
 
     private GroupBox BuildGameplayGroup()
@@ -1068,6 +1140,58 @@ public sealed class MainForm : Form
         }
     }
 
+    private void StartUnlocksSyncLoop()
+    {
+        StopUnlocksSyncLoop();
+        _unlocksSyncCts = new CancellationTokenSource();
+        var token = _unlocksSyncCts.Token;
+        _ = Task.Run(async () =>
+        {
+            while (!token.IsCancellationRequested)
+            {
+                try
+                {
+                    if (!_trainer.Memory.IsAttached)
+                    {
+                        await Task.Delay(100, token);
+                        continue;
+                    }
+
+                    var skip = (bool)Invoke(new Func<bool>(() => _rouletteAvailableFreeze.Checked));
+                    if (!skip)
+                    {
+                        var read = await Task.Run(() => _trainer.Unlocks.GetRouletteAvailable(), token);
+                        BeginInvoke(new Action(() =>
+                        {
+                            _suppressEvents = true;
+                            try
+                            {
+                                var display = (decimal)(read ?? 0);
+                                if (_rouletteAvailableInput.Value != display)
+                                    _rouletteAvailableInput.Value = display;
+                            }
+                            finally { _suppressEvents = false; }
+                        }));
+                    }
+
+                    await Task.Delay(250, token);
+                }
+                catch (TaskCanceledException) { break; }
+                catch { await Task.Delay(250, token); }
+            }
+        });
+    }
+
+    private void StopUnlocksSyncLoop()
+    {
+        if (_unlocksSyncCts is not null)
+        {
+            _unlocksSyncCts.Cancel();
+            try { _unlocksSyncCts.Dispose(); } catch { }
+            _unlocksSyncCts = null;
+        }
+    }
+
     private async Task SyncPlayerMetersFromMemoryAsync()
     {
         var (gh, lvl) = await Task.Run(() =>
@@ -1181,11 +1305,14 @@ public sealed class MainForm : Form
         _levelMeterFreeze.Enabled = attached;
         _movesUnlockButton.Enabled = attached;
         _rouletteUnlockButton.Enabled = attached;
-        _doubleGodHandCombo.Enabled = attached;
+        _costumeCombo.Enabled = attached;
         _rouletteSlotsInput.Enabled = attached;
         _rouletteSlotsApply.Enabled = attached;
-        _doubleGodHandFreeze.Enabled = attached;
+        _costumeFreeze.Enabled = attached;
         _rouletteSlotsFreeze.Enabled = attached;
+        _rouletteAvailableInput.Enabled = attached;
+        _rouletteAvailableApply.Enabled = attached;
+        _rouletteAvailableFreeze.Enabled = attached;
         _levelMeterInput.Enabled = attached;
         _levelMeterApply.Enabled = attached;
         _levelMeterFreeze.Enabled = attached;
@@ -1195,8 +1322,10 @@ public sealed class MainForm : Form
         {
             _suppressEvents = true;
             _godModeToggle.Checked = false;
-            _doubleGodHandFreeze.Checked = false;
+            _costumeFreeze.Checked = false;
             _rouletteSlotsFreeze.Checked = false;
+            _rouletteAvailableFreeze.Checked = false;
+            _rouletteAvailableInput.Value = 0;
             _godHandMeterFreeze.Checked = false;
             _levelMeterFreeze.Checked = false;
             _unlimitedKeysToggle.Checked = false;
@@ -1235,12 +1364,14 @@ public sealed class MainForm : Form
         if (attached)
         {
             StartCombatSyncLoop();
+            StartUnlocksSyncLoop();
             _ = SyncMoveDamageFromMemoryAsync();
             _ = SyncPlayerMetersFromMemoryAsync();
         }
         else
         {
             StopCombatSyncLoop();
+            StopUnlocksSyncLoop();
         }
         _timeScaleEnable.Enabled = attached;
         _timeScaleSlider.Enabled = attached;

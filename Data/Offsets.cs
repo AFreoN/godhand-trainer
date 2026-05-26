@@ -22,14 +22,17 @@ public static class Offsets
     public const uint AllRoulettesUnlock = 0x20568800;
     public const uint RouletteSlots = 0x20568826;
     public const uint RouletteSlotsHolder = 0x20568768;
-    public const uint DoubleGodHand = 0x20568778;
+    public const uint RouletteAvailable = 0x20568778;
+    public const uint Costume = 0x2056877E;
 
     public const byte RouletteSlotsMin = 2;
     public const byte RouletteSlotsMax = 6;
 
-    public const long DoubleGodHandDefault = 1103823438081L;
-    public const long DoubleGodHandKarate = 361696448896631041L;
-    public const long DoubleGodHandDevil = 217018310867353857L;
+    public const byte RouletteAvailableMin = 2;
+    public const byte RouletteAvailableMax = 6;
+    public const int RouletteAvailableLength = 6;
+
+    public static readonly byte[] AllRoulettesUnlockPayload = { 0xFF, 0xFF, 0xFF, 0xFF };
 
     public const uint MoveTriangle = 0x205688A4;
     public const uint MoveDownTriangle = 0x20568910;
@@ -48,8 +51,6 @@ public static class Offsets
 
     public const int GoldMin = 0;
     public const int GoldMax = 999_999;
-
-    public const int AllRoulettesUnlockValue = 1_862_270_975;
 
     public static readonly byte[] MovesUnlockerPayload =
     {
